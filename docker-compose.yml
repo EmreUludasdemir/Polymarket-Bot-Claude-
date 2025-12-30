@@ -1,0 +1,93 @@
+version: '3.8'
+
+# Polymarket Trading Bot - Docker Compose Configuration
+# Suitable for VPS deployment with limited resources
+
+services:
+  # Main trading bot service
+  polymarket-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: polymarket-trading-bot
+    restart: unless-stopped
+
+    # Environment file for secrets
+    env_file:
+      - .env
+
+    # Persistent volumes for data and logs
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+
+    # Resource limits (suitable for cheap VPS - $5-10/month)
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Network
+    networks:
+      - bot-network
+
+  # Paper trading instance (for testing)
+  polymarket-bot-paper:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: polymarket-bot-paper
+    restart: "no"
+    profiles:
+      - paper
+
+    # Environment with paper trading enabled
+    env_file:
+      - .env
+    environment:
+      - PAPER_TRADING=true
+
+    volumes:
+      - ./data-paper:/app/data
+      - ./logs-paper:/app/logs
+
+    command: ["python", "main.py", "--paper"]
+
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+
+    networks:
+      - bot-network
+
+networks:
+  bot-network:
+    driver: bridge
+
+# Volume definitions for persistence
+volumes:
+  bot-data:
+    driver: local
+  bot-logs:
+    driver: local
