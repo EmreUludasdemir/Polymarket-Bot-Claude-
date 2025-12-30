@@ -131,6 +131,131 @@ class TradingSettings(BaseSettings):
         case_sensitive = False
 
 
+class MarketMakingSettings(BaseSettings):
+    """Market making strategy parameters"""
+
+    enabled: bool = Field(
+        default=True,
+        description="Enable market making strategy"
+    )
+    quote_size: Decimal = Field(
+        default=Decimal("5.0"),
+        ge=Decimal("1.0"),
+        le=Decimal("100.0"),
+        description="Default quote size in USDC per side"
+    )
+    max_spread: Decimal = Field(
+        default=Decimal("0.04"),
+        ge=Decimal("0.01"),
+        le=Decimal("0.10"),
+        description="Maximum spread to quote (4% default)"
+    )
+    min_spread: Decimal = Field(
+        default=Decimal("0.01"),
+        ge=Decimal("0.005"),
+        le=Decimal("0.05"),
+        description="Minimum spread to maintain profitability"
+    )
+    max_position_per_market: Decimal = Field(
+        default=Decimal("25.0"),
+        ge=Decimal("5.0"),
+        le=Decimal("100.0"),
+        description="Maximum position size per market (USDC)"
+    )
+    inventory_skew_factor: Decimal = Field(
+        default=Decimal("0.5"),
+        ge=Decimal("0.0"),
+        le=Decimal("1.0"),
+        description="How much to skew quotes based on inventory"
+    )
+    volatility_cooldown_seconds: int = Field(
+        default=30,
+        ge=5,
+        le=300,
+        description="Seconds to pause after volatility spike"
+    )
+    max_markets: int = Field(
+        default=5,
+        ge=1,
+        le=20,
+        description="Maximum markets to make simultaneously"
+    )
+    quote_refresh_seconds: float = Field(
+        default=5.0,
+        ge=1.0,
+        le=60.0,
+        description="How often to refresh quotes"
+    )
+
+    class Config:
+        env_prefix = "MM_"
+        case_sensitive = False
+
+
+class RewardsSettings(BaseSettings):
+    """Liquidity rewards configuration"""
+
+    enabled: bool = Field(
+        default=True,
+        description="Enable rewards-aware market making"
+    )
+    min_reward_rate: Decimal = Field(
+        default=Decimal("0.0"),
+        description="Minimum reward rate to participate"
+    )
+    prefer_reward_markets: bool = Field(
+        default=True,
+        description="Prioritize reward-eligible markets"
+    )
+    max_incentive_spread_buffer: Decimal = Field(
+        default=Decimal("0.005"),
+        description="Quote inside max_incentive_spread by this buffer"
+    )
+
+    class Config:
+        env_prefix = "REWARDS_"
+        case_sensitive = False
+
+
+class RateLimitSettings(BaseSettings):
+    """API rate limiting configuration"""
+
+    max_orders_per_second: int = Field(
+        default=10,
+        ge=1,
+        le=100,
+        description="Maximum orders per second"
+    )
+    max_requests_per_second: int = Field(
+        default=50,
+        ge=10,
+        le=200,
+        description="Maximum API requests per second"
+    )
+    burst_limit: int = Field(
+        default=20,
+        ge=5,
+        le=50,
+        description="Burst limit for rate limiter"
+    )
+    backoff_base_seconds: float = Field(
+        default=1.0,
+        ge=0.5,
+        le=5.0,
+        description="Base backoff time for rate limit errors"
+    )
+    backoff_max_seconds: float = Field(
+        default=60.0,
+        ge=10.0,
+        le=300.0,
+        description="Maximum backoff time"
+    )
+
+    class Config:
+        env_prefix = "RATE_"
+        case_sensitive = False
+
+
 class OperationalSettings(BaseSettings):
     """Operational parameters"""
 
@@ -214,12 +339,16 @@ class Settings:
 
         print(settings.trading.initial_capital)
         print(settings.wallet.private_key)
+        print(settings.market_making.quote_size)
     """
 
     def __init__(self):
         self.wallet = WalletSettings()
         self.api = APISettings()
         self.trading = TradingSettings()
+        self.market_making = MarketMakingSettings()
+        self.rewards = RewardsSettings()
+        self.rate_limit = RateLimitSettings()
         self.operational = OperationalSettings()
         self.notifications = NotificationSettings()
 
